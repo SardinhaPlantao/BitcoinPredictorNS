@@ -16,7 +16,16 @@ from dataclasses import dataclass
 import warnings
 warnings.filterwarnings('ignore')
 
-from core.config import config
+# CORREÇÃO: Import relativo correto (config está na mesma pasta 'core')
+from .config import config
+
+# Adicione estes imports que faltam para as funções específicas
+# Eles serão necessários quando as funções forem chamadas
+# CORREÇÃO: Importar usando caminhos absolutos a partir de bitcoin_ml_system
+
+# Para _fetch_macro_data
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 @dataclass
 class DataCache:
@@ -55,10 +64,18 @@ class DataManager:
     
     def _create_directories(self):
         """Cria diretórios necessários para o sistema"""
-        paths = config.get_paths()
-        for path_name, path in paths.items():
-            if not os.path.exists(path):
-                os.makedirs(path, exist_ok=True)
+        # CORREÇÃO: Acessar config de forma segura
+        try:
+            paths = config.get_paths()
+            for path_name, path in paths.items():
+                if not os.path.exists(path):
+                    os.makedirs(path, exist_ok=True)
+        except AttributeError:
+            # Fallback para paths padrão se config.get_paths() não existir
+            base_dirs = ['data', 'data/cache', 'data/models', 'logs']
+            for dir_name in base_dirs:
+                if not os.path.exists(dir_name):
+                    os.makedirs(dir_name, exist_ok=True)
     
     def _get_cache_key(self, data_type: str, params: Dict) -> str:
         """Gera uma chave única para cache baseada nos parâmetros"""
@@ -71,7 +88,12 @@ class DataManager:
         if cache_key not in self._cache:
             return False
         
-        cache_duration = timedelta(hours=config.CACHE_DURATION_HOURS)
+        # CORREÇÃO: Valor padrão se config.CACHE_DURATION_HOURS não existir
+        try:
+            cache_duration = timedelta(hours=config.CACHE_DURATION_HOURS)
+        except AttributeError:
+            cache_duration = timedelta(hours=24)  # Padrão: 24 horas
+        
         cache_age = datetime.now() - self._cache[cache_key].timestamp
         
         return cache_age < cache_duration
@@ -144,7 +166,13 @@ class DataManager:
             
             print(f"📥 Buscando Bitcoin: {period}, {interval}")
             
-            btc = yf.Ticker(config.BTC_SYMBOL)
+            # CORREÇÃO: Usar valor padrão se config.BTC_SYMBOL não existir
+            try:
+                btc_symbol = config.BTC_SYMBOL
+            except AttributeError:
+                btc_symbol = "BTC-USD"
+            
+            btc = yf.Ticker(btc_symbol)
             df = btc.history(period=period, interval=interval)
             
             if df.empty:
@@ -170,14 +198,32 @@ class DataManager:
                          indicators: Optional[List[str]] = None) -> Optional[pd.DataFrame]:
         """Busca dados macroeconômicos do FRED"""
         try:
-            from fredapi import Fred
+            # CORREÇÃO: Import dentro da função para evitar erro se não tiver a biblioteca
+            # Também usar valores padrão se config não tiver os atributos
+            try:
+                from fredapi import Fred
+            except ImportError:
+                print("⚠️ Biblioteca 'fredapi' não instalada. Instale com: pip install fredapi")
+                return None
             
-            if indicators is None:
-                indicators = list(config.MACRO_INDICATORS.values())
+            # CORREÇÃO: Obter indicadores de config ou usar padrão
+            try:
+                if indicators is None:
+                    indicators = list(config.MACRO_INDICATORS.values())
+            except AttributeError:
+                # Indicadores macro padrão se não existir em config
+                indicators = ['DGS10', 'T10Y2Y', 'DCOILWTICO', 'GOLDAMGBD228NLBM']
             
             print(f"📥 Buscando {len(indicators)} indicadores macro ({years_back} anos)")
             
-            fred = Fred(api_key=config.FRED_API_KEY)
+            # CORREÇÃO: Obter API key ou usar string vazia
+            try:
+                api_key = config.FRED_API_KEY
+            except AttributeError:
+                api_key = ""  # Pode funcionar sem API key para dados públicos
+                print("⚠️ FRED_API_KEY não configurada, usando acesso público")
+            
+            fred = Fred(api_key=api_key)
             end_date = datetime.now()
             start_date = end_date - timedelta(days=years_back * 365)
             
@@ -224,9 +270,20 @@ class DataManager:
         try:
             import yfinance as yf
             
+            # CORREÇÃO: Obter ativos de config ou usar padrão
+            try:
+                related_assets = config.RELATED_ASSETS
+            except AttributeError:
+                related_assets = {
+                    'Ethereum': 'ETH-USD',
+                    'Gold': 'GC=F',
+                    'S&P500': '^GSPC',
+                    'US Dollar': 'DX-Y.NYB'
+                }
+            
             assets_data = {}
             
-            for asset_name, symbol in config.RELATED_ASSETS.items():
+            for asset_name, symbol in related_assets.items():
                 try:
                     print(f"📥 Buscando {asset_name} ({symbol})")
                     
@@ -395,7 +452,15 @@ class DataManager:
                 'last_update': self._last_update
             }
             
-            path = os.path.join(config.get_paths()['data_cache'], filename)
+            # CORREÇÃO: Obter caminho seguro
+            try:
+                cache_dir = config.get_paths()['data_cache']
+            except (AttributeError, KeyError):
+                cache_dir = 'data/cache'
+                if not os.path.exists(cache_dir):
+                    os.makedirs(cache_dir, exist_ok=True)
+            
+            path = os.path.join(cache_dir, filename)
             with open(path, 'wb') as f:
                 pickle.dump(state, f)
             
@@ -409,7 +474,13 @@ class DataManager:
     def load_state(self, filename: str = "data_manager_state.pkl"):
         """Carrega estado anterior do DataManager"""
         try:
-            path = os.path.join(config.get_paths()['data_cache'], filename)
+            # CORREÇÃO: Obter caminho seguro
+            try:
+                cache_dir = config.get_paths()['data_cache']
+            except (AttributeError, KeyError):
+                cache_dir = 'data/cache'
+            
+            path = os.path.join(cache_dir, filename)
             
             if os.path.exists(path):
                 with open(path, 'rb') as f:
