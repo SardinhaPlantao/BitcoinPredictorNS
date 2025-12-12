@@ -1,12 +1,50 @@
-streamlit==1.28.0
-yfinance==0.2.33
+# ================================================
+# DEPENDÊNCIAS PARA SISTEMA DE PREVISÃO BITCOIN
+# ================================================
+
+# ANÁLISE DE DADOS E MANIPULAÇÃO
 pandas==2.1.3
-numpy>=1.26.0  # VERIFICAR: Esta linha deve ser exatamente assim!
-scikit-learn==1.3.0
-matplotlib==3.8.0
-plotly==5.17.0
-ta==0.10.2
-python-dotenv==1.0.0
-joblib==1.3.2
-fredapi==0.5.0
+numpy==1.26.0
+scipy==1.11.4
+
+# COLETA DE DADOS
+yfinance==0.2.66  # Versão corrigida que funciona
 requests==2.31.0
+fredapi==0.5.0
+pandas-datareader==0.10.0
+
+# VISUALIZAÇÃO E DASHBOARD
+streamlit==1.28.0
+plotly==5.17.0
+matplotlib==3.8.0
+
+# MACHINE LEARNING
+scikit-learn==1.3.0
+xgboost==1.7.6
+lightgbm==4.1.0
+joblib==1.3.2
+
+# ANÁLISE TÉCNICA E ESTATÍSTICA
+# ta==0.10.2  # REMOVIDO: Causa conflitos, usamos nossas próprias funções
+statsmodels==0.14.0
+
+# UTILITÁRIOS
+python-dotenv==1.0.0
+tqdm==4.66.1
+seaborn==0.13.0
+colorama==0.4.6
+
+# PARA SERIALIZAÇÃO
+pickle-mixin==1.0.2
+
+# OTIMIZAÇÃO
+numba==0.58.1
+
+# DESENVOLVIMENTO (opcional)
+# pytest==7.4.3
+# black==23.11.0
+# flake8==6.1.0
+
+# ================================================
+# VERSÕES TESTADAS E COMPATÍVEIS
+# ================================================
